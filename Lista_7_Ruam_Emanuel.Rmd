@@ -1,0 +1,202 @@
+---
+title: "Lista_7_Ruam_Emanuel"
+author: "Ruam Emanuel"
+date: "25 de maio de 2019"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message = FALSE}
+if(require(ggplot2) == F) install.packages('ggplot2'); require(ggplot2)
+if(require(tidyverse) == F) install.packages('tidyverse'); require(tidyverse)
+if(require(dplyr) == F) install.packages('dplyr'); require(tidyverse)
+if(require(ggiraphExtra) == F) install.packages('ggiraphExtra'); require(ggiraphExtra)
+if(require(modelr) == F) install.packages('modelr'); require(modelr)
+```
+
+```{r}
+setwd("C:/GitHub/Lista_7/Lista_7/Dados")
+
+library(haven)
+
+fair <- read_dta("fair.dta")
+```
+
+**1. A base de dados fair.dta (disponivel na pasta do OSF) possui variaveis adicionais ao banco de dados sobre voto economico nos EUA. Com ela desenvolva as atividades abaixo e comente seu codigo:**
+
+**a) Apresente uma analise descritiva de todas as variaveis da base de dados.**
+
+```{r}
+summary(fair)
+```
+
+**b) Apresente um modelo de regrecao linear bivariado no qual VOTE seja variavel dependente e GROWTH variavel independente.**
+
+```{r}
+  # Realizando regressÃ£o
+reg1 <- lm(VOTE~GROWTH, data = fair)
+```
+
+**I. Descreva as variaveis utilizadas no modelo e sua relacao;**
+ 
+VOTE é a variável dependente e GROWTH é a variavel independente. Ha relacao positiva entre as variaveis, ou seja, quanto maior o crescimento economico, maior a quantidade de votos. Analisando Pvalor, vê-se que a hipotese nula é descartada. 
+
+**II. Apresente os resultados do modelo;**
+
+```{r}
+
+# Analisando os resultados da regressao
+summary(reg1)
+
+# Plotando grafico
+ggplot(fair, aes(VOTE, GROWTH)) + 
+  labs(x = "Voto", y ="Crescimento", title = "GrÃ¡fico de dispersÃ£o") +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+**III. Avalie o modelo quanto a seu ajuste e sua capacidade explicativa.**
+  
+```{r}
+ # Roots RMSE
+rmse(reg1, fair)
+  
+# Intervalo de confianca
+confint(reg1)
+```
+
+A partir do $R^2$ se observa que a variavel `GROWTH` explica cerca de 36% do modelo. Sendo assim, o modelo e satisfatorio. Além disso, o RMSE tem um valor relativamente baixo, o que nos mostra que a probabilidade de erro no modelo não é grande.
+
+**c) Apresente um modelo de regressao multivariada adicionando ao modelo do item a) a variavel GOODNEWS como variavel independente.**
+
+```{r}
+# Realizando regressao
+reg2 <- lm(VOTE~GROWTH + GOODNEWS, data = fair)
+```
+ 
+**I. Descreva a variavel adicionada ao modelo e sua relacao com as demais;**
+ 
+```{r}
+summary(fair$GOODNEWS)
+```
+
+A variavel `GOODNEWS` no modelo é a variavel independente; Sua adição ao modelo gera um melhor ajuste e poder de explicacao.
+ 
+
+**II. Apresente os resultados do modelo;**
+  
+```{r}
+summary(reg2)
+```
+
+```{r}
+ # Preparando dados para plotar
+equation1=function(x){coef(reg2)[2]*x+coef(reg2)[1]}
+equation2=function(x){coef(reg2)[2]*x+coef(reg2)[1]+coef(reg2)[3]}
+
+  # Plotando grafico
+ggplot(fair,aes(y = VOTE, x = GROWTH, color = GOODNEWS)) + 
+  geom_point() +
+  stat_function(fun=equation1,geom="line",
+                color=scales::hue_pal()(2)[1]) +
+  stat_function(fun=equation2,geom="line",
+                color=scales::hue_pal()(2)[2])
+```
+
+Analisando como os dados se ajustam, percebemos que ha uma relacao positiva entre as variaveis.
+
+**III. Avalie o modelo quanto a seu ajuste e sua capacidade explicativa. Comente e interprete os coeficientes estimados, os intervalos de confianca do modelo e o RMSE e o $R^2$.**
+
+```{r}
+ # Intervalo de confianca
+confint(reg2)
+
+ # Roots MSE
+rmse(reg2, fair)
+```
+
+A partir do $R^2$ se observa que o modelo responde aproximadamente 40.4%, sendo considerado satisfatorio. O RMSE deste modelo e menor que o do modelo anterior, o que nos faz acreditar que a probabilidade de erro e menor. 
+
+
+**IV. Compare os resultados do item anterior com os adquiridos com o modelo do item b).**
+     
+O poder explicativo desse novo modelo é maior que o anterior e a probabilidade de erro tornou-se menor. Porém, a variável good news tem uma significancia menor para o modelo que a variavel crescimento.
+  
+
+**V. Faca uma analise dos residuos ($u_i$), apresente sua media e indicios para concluir se ha ou nao ha homocedasticidade no modelo.**
+  
+```{r}
+mean(residuals(reg2))
+
+plot(reg2)
+```
+
+Observa-se pela manuntenção de padrão dos dados no gráfico dos residuos pelos valores preditos, que o modelo é homocedastico.
+
+**d) Apresente um modelo de regressÃ£o multivariada adicionando ao modelo do item b) a variavel WAR como variavel independente.**
+
+```{r}
+  # Realizando regressao
+
+reg3 <- lm(VOTE~GROWTH + WAR, data = fair)
+```
+
+**I. Descreva a variavel adicionada ao modelo e sua relacao com as demais;**
+ 
+A variavel guerra tem baixa influência para o modelo. Estatisticamente é insignificante, com um alto Pvalor de 0.19 e uma estimativa de erro de 2.98, bem maior que o erro do intercepto e da variavel crescimento.
+
+**II. Apresente os resultados do modelo;**
+```{r}
+summary(reg3)
+```
+
+**III. Avalie o modelo quanto a seu ajuste e sua capacidade explicativa. Comente e interprete os coeficientes estimados, os intervalos de confianca do modelo e o RMSE e o R2.**
+
+```{r}
+rmse(reg3, fair)
+```
+```{r}
+confint(reg3)
+```
+
+A partir dos resultados que foram pedidos, observamos que o modelo ajustado com a variavel war tem um poder explicativo menor do que o modelo que se utiliza da variavel good news. O RMSE é maior que o modelo anterior, enquanto o R² é menor. Além disso, O valor estimado é negativo.
+
+**IV. Compare os resultados do item anterior com os adquiridos com o modelo do item c).**
+  
+```{r}
+ggPredict(reg3)
+```
+
+Analisando os dois modelos, observa-se que, embora a variável guerra tenha um pequeno poder explicativo ao modelo a partir do R², estatisticamente é insignificante sua relacao com as outras variaveis. Com a elaboracao do gráfico, percebe-se que há dados relacionados a guerra apenas em três casos, e um dos casos é outlier. 
+
+
+**V. Faca uma analise dos residuos ($u_i$), apresente sua media e indicios para concluir se ha ou nao ha homocedasticidade no modelo.**
+ 
+```{r}
+mean(residuals(reg3))
+
+plot(reg3)
+```
+
+Observa-se que os dados mantem um padrao no grafico que se analisa os residuos e os valores preditos. O modelo e homocedastico.
+
+**VI. Qual variavel tem maior efeito descritivo sobre a variavel dependente? Apresente sua analise.**
+  
+Crescimento é a variavel de maior influencia. Seu poder de explicação a partir do R² é o maior sobre a questão dos votos em todos os modelos. Sua possibilidade de erro, por consequencia é menor. Além disso, quando analisado o P valor, essa variavel tem o menor valor. 
+    
+**2. Numa das revistas listadas abaixo, identifique um artigo que apresente resultados de um modelo de regressao multivariada e realize as seguintes tarefas:**
+
+**a) Faca a citacao do artigo.**
+
+Deutschmann, E., & Minkus, L. (2018). Balançando para a esquerda: Opinião pública sobre integração econômica e política na América Latina, 1997-2010. Latin American Research Review , 53 (1), 38-56. DOI: http://doi.org/10.25222/larr.250
+
+**b) Qual a variavel dependente do modelo? Apresente o modelo utilizado no artigo e a justificativa para tal verificando qual a relevancia do uso do modelo para a pergunta de pesquisa do artigo.**
+
+
+
+**c) Interprete os resultados do modelo.**
